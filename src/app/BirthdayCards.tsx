@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,83 +7,96 @@ import {
   TouchableOpacity,
   SafeAreaView,
   TextInput,
+  Image,
+  Alert,
 } from 'react-native';
-import { Image } from 'react-native';
 
-// Use require for React Native asset imports
-const card1 = require('../assets/birth_1.png');
-const card2 = require('../assets/birth_2.png');
-const card3 = require('../assets/birth_3.png');
-const card4 = require('../assets/birth_4.png');
-const card5 = require('../assets/birth_5.png');
-const card6 = require('../assets/birth_6.png');
+import Toast from 'react-native-toast-message';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-
+import { ref, get } from 'firebase/database';
+import { db } from '../../Firebase';
 
 interface BirthdayCardsProps {
   onBack: () => void;
-  onGoToCart?: () => void;
+  onGoToCart?: (items: any[]) => void;
+  type: 'birthday' | 'valentine' | 'mother';
 }
 
-const BirthdayCards: React.FC<BirthdayCardsProps> = ({ onBack, onGoToCart }) => {
+const BirthdayCards: React.FC<BirthdayCardsProps> = ({
+  onBack,
+  onGoToCart,
+  type,
+}) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const birthdayCards = [
-    {
-      id: 1,
-      title: 'Happy Birthday',
-      category: 'Adult',
-      image: card1,
-      price: '$4.99',
-      liked: false,
-    },
-    {
-      id: 2,
-      title: 'Birthday Wishes',
-      category: 'For Her',
-      image: card2,
-      price: '$4.99',
-      liked: false,
-    },
-    {
-      id: 3,
-      title: 'Have a Great Day',
-      category: 'For Him',
-      image: card3,
-      price: '$4.99',
-      liked: false,
-    },
-    {
-      id: 4,
-      title: 'Celebrate You',
-      category: 'Adult',
-      image: card4,
-      price: '$4.99',
-      liked: false,
-    },
-    {
-      id: 5,
-      title: 'Make a Wish',
-      category: 'For Her',
-      image: card5,
-      price: '$4.99',
-      liked: false,
-    },
-    {
-      id: 6,
-      title: 'Birthday Fun',
-      category: 'For Him',
-      image: card6,
-      price: '$4.99',
-      liked: false,
-    },
-  ];
-
+  const [birthdayCards, setBirthdayCards] = useState<any[]>([]); //  from Firebase
+  const [selectedCards, setSelectedCards] = useState<String[]>([]);
   const categories = ['Adult', 'For Her', 'For Him'];
-  const [currentScreen, setCurrentScreen] = useState('birthdayCards');
-  const filteredCards = birthdayCards.filter((card) => {
-    const matchesSearch = card.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = !selectedCategory || card.category === selectedCategory;
+
+  const toggleSelect = (id: string) => {
+    if (selectedCards.includes(id)) {
+      setSelectedCards(selectedCards.filter(item => item !== id));
+      console.log('selected card:', setSelectedCards);
+    } else {
+      if (selectedCards.length >= 3) {
+        Toast.show({
+          type: 'info',
+          text1: 'Oops! 😅',
+          text2: '❤️ Only 3 gifts allowed!',
+        });
+        return;
+      }
+      setSelectedCards([...selectedCards, id]);
+    }
+  };
+
+  const getTitle = () => {
+    if (type === 'birthday') return 'Birthday Gifts';
+    if (type === 'valentine') return 'Valentine Gifts';
+    if (type === 'mother') return 'Mother Gifts';
+    return 'Cards';
+  };
+  //Fetch from Firebase
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        let path = '';
+        if (type === 'birthday') path = 'birthday_gifts';
+        if (type === 'valentine') path = 'valentine_gifts';
+        if (type === 'mother') path = 'mother_gifts';
+        console.log('TYPE VALUE ', type);
+
+        const snapshot = await get(ref(db, `Gifts/${path}`));
+
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+
+          const formatted = Object.keys(data).map(key => ({
+            ...data[key],
+          }));
+
+          setBirthdayCards(formatted);
+        } else {
+          console.log('No data found');
+        }
+      } catch (error) {
+        console.log('Error fetching data:', error);
+      }
+    };
+
+    fetchData();
+  }, [type]);
+
+  //  Filter logic
+  const filteredCards = birthdayCards.filter(card => {
+    const matchesSearch = card.title
+      ?.toLowerCase()
+      .includes(searchQuery.toLowerCase());
+
+    const matchesCategory =
+      !selectedCategory || card.category === selectedCategory;
+
     return matchesSearch && matchesCategory;
   });
 
@@ -94,42 +107,42 @@ const BirthdayCards: React.FC<BirthdayCardsProps> = ({ onBack, onGoToCart }) => 
         <TouchableOpacity onPress={onBack}>
           <Text style={styles.backButton}>‹ Back</Text>
         </TouchableOpacity>
+
         <View>
-          <Text style={styles.title}>Birthday Cards</Text>
-          <Text style={styles.cardCount}>(500+)</Text>
+          <Text style={styles.title}>{getTitle()}</Text>
+
+          <Text style={styles.cardCount}>({birthdayCards.length})</Text>
         </View>
+
         <View style={styles.spacer} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Filter Bar */}
-        <View style={styles.filterBar}>
-          <TouchableOpacity style={styles.filterButton}>
-            <Text style={styles.filterIcon}>☰</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.filterDropdown}>
-            <Text style={styles.filterDropdownText}>Who's it for? ▼</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.filterDropdown}>
-            <Text style={styles.filterDropdownText}>Photos ▼</Text>
-          </TouchableOpacity>
-        </View>
-
         {/* Category Tags */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryTagsContainer}>
-          {categories.map((category) => (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.categoryTagsContainer}
+        >
+          {categories.map(category => (
             <TouchableOpacity
               key={category}
-              onPress={() => setSelectedCategory(selectedCategory === category ? null : category)}
+              onPress={() =>
+                setSelectedCategory(
+                  selectedCategory === category ? null : category,
+                )
+              }
               style={[
                 styles.categoryTag,
                 selectedCategory === category && styles.categoryTagActive,
-              ]}>
+              ]}
+            >
               <Text
                 style={[
                   styles.categoryTagText,
                   selectedCategory === category && styles.categoryTagTextActive,
-                ]}>
+                ]}
+              >
                 {category}
               </Text>
             </TouchableOpacity>
@@ -140,45 +153,81 @@ const BirthdayCards: React.FC<BirthdayCardsProps> = ({ onBack, onGoToCart }) => 
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
-            placeholder="Search birthday cards..."
+            placeholder={`Search ${getTitle().toLowerCase()}....`}
             placeholderTextColor="#999"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Icon
+            name="magnify"
+            size={25}
+            color="#999"
+            style={styles.searchIcon}
+          />
         </View>
 
         {/* Cards Grid */}
         <View style={styles.cardsGrid}>
-          {filteredCards.map((card) => (
-            <TouchableOpacity key={card.id} style={styles.cardItem}>
-              <View style={styles.cardImageContainer}>
-                {/* <Text style={styles.cardEmoji}>{card.image} */}
-                 <Image
-  source={card.image}
-  style={styles.bdayIcon}
-/>
-                {/* </Text> */}
+          {filteredCards.map(card => (
+            <TouchableOpacity
+              key={card.id}
+              style={styles.cardItem}
+              onPress={() => toggleSelect(card.id)}
+            >
+              <View style={styles.checkbox}>
+                {selectedCards.includes(card.id) && (
+                  <Text style={styles.tick}>♥</Text>
+                )}
               </View>
+              <View style={styles.cardImageContainer}>
+                <Image
+                  source={
+                    card.image
+                      ? { uri: card.image } // Firebase image
+                      : require('../assets/birth_1.png') // fallback
+                  }
+                  style={styles.bdayIcon}
+                />
+              </View>
+
               <Text style={styles.cardTitle}>{card.title}</Text>
-              <Text style={styles.cardPrice}>{card.price}</Text>
-              <TouchableOpacity style={styles.addButton}
+
+              <Text style={styles.cardPrice}>${card.price}</Text>
+
+              {/* <TouchableOpacity
+                style={styles.addButton}
                 onPress={onGoToCart}>
-                <Text style={styles.addButtonText}>Add to Basket</Text>
-              </TouchableOpacity>
+                <Text style={styles.addButtonText}>
+                  Add to Basket
+                </Text>
+              </TouchableOpacity> */}
             </TouchableOpacity>
           ))}
         </View>
       </ScrollView>
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => {
+          const selectedItems = birthdayCards.filter(card =>
+            selectedCards.includes(card.id),
+          );
+
+          onGoToCart && onGoToCart(selectedItems);
+        }}
+      >
+        <Text style={styles.addButtonText}>Add to Basket</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
+
+export default BirthdayCards;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-      paddingTop: 50, 
+    paddingTop: 50,
   },
   header: {
     flexDirection: 'row',
@@ -191,7 +240,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     fontSize: 16,
-    color: '#0052cc',
+    color: '#001a4d',
     fontWeight: '600',
   },
   title: {
@@ -206,34 +255,6 @@ const styles = StyleSheet.create({
   },
   spacer: {
     width: 60,
-  },
-  filterBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 10,
-  },
-  filterButton: {
-    padding: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 6,
-  },
-  filterIcon: {
-    fontSize: 18,
-  },
-  filterDropdown: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 6,
-  },
-  filterDropdownText: {
-    fontSize: 12,
-    color: '#333',
-    fontWeight: '500',
   },
   categoryTagsContainer: {
     paddingHorizontal: 12,
@@ -270,7 +291,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: '#0052cc',
+    borderColor: '#0f1114',
   },
   searchInput: {
     flex: 1,
@@ -278,7 +299,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   searchIcon: {
-    fontSize: 18,
+    fontSize: 25,
     marginLeft: 8,
   },
   scrollContent: {
@@ -293,6 +314,7 @@ const styles = StyleSheet.create({
     width: '48%',
     backgroundColor: '#f9f9f9',
     borderRadius: 12,
+    elevation: 8,
     padding: 12,
     marginBottom: 16,
     alignItems: 'center',
@@ -307,9 +329,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
-  },
-  cardEmoji: {
-    fontSize: 50,
   },
   cardTitle: {
     fontSize: 14,
@@ -326,21 +345,37 @@ const styles = StyleSheet.create({
   },
   addButton: {
     width: '100%',
-    backgroundColor: '#0052cc',
+    height: '7%',
+    backgroundColor: '#00a79d',
     paddingVertical: 8,
-    borderRadius: 6,
     alignItems: 'center',
   },
   addButtonText: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: 19,
     fontWeight: '600',
   },
   bdayIcon: {
-  width: '100%',
-  height: '100%',
-  resizeMode: 'contain',
-}
-});
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
+  },
+  checkbox: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderWidth: 2,
+    borderColor: '#e9edf1',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
 
-export default BirthdayCards;
+  tick: {
+    color: '#007bff',
+    fontWeight: 'bold',
+  },
+});

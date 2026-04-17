@@ -30,8 +30,8 @@ const OrderSuccess: React.FC<OrderSuccessProps> = ({
 
       {/* Message */}
       <Text style={styles.message}>
-        Thank you for your purchase. Your order has been placed successfully
-        and will be delivered soon.
+        Thank you for your purchase. Your order has been placed successfully and
+        will be delivered soon.
       </Text>
 
       {/* Order Info Box */}

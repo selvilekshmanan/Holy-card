@@ -17,12 +17,17 @@ import card4 from '../assets/birth_4.png';
 import card5 from '../assets/birth_5.png';
 import card6 from '../assets/birth_6.png';
 
-
 interface MotherdayCardsProps {
   onBack: () => void;
+  type: 'birthday' | 'valentine' | 'mother';
+  onGoToCart?: () => void;
 }
 
-const MotherdayCards: React.FC<MotherdayCardsProps> = ({ onBack }) => {
+const MotherdayCards: React.FC<MotherdayCardsProps> = ({
+  onBack,
+  type,
+  onGoToCart,
+}) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const birthdayCards = [
@@ -78,9 +83,12 @@ const MotherdayCards: React.FC<MotherdayCardsProps> = ({ onBack }) => {
 
   const categories = ['Adult', 'For Her', 'For Him'];
 
-  const filteredCards = birthdayCards.filter((card) => {
-    const matchesSearch = card.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = !selectedCategory || card.category === selectedCategory;
+  const filteredCards = birthdayCards.filter(card => {
+    const matchesSearch = card.title
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    const matchesCategory =
+      !selectedCategory || card.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -92,7 +100,11 @@ const MotherdayCards: React.FC<MotherdayCardsProps> = ({ onBack }) => {
           <Text style={styles.backButton}>‹ Back</Text>
         </TouchableOpacity>
         <View>
-          <Text style={styles.title}>Birthday Cards</Text>
+          <Text style={styles.title}>
+            {type === 'birthday' && 'Birthday Cards'}
+            {type === 'valentine' && 'Valentine Cards'}
+            {type === 'mother' && 'Mother Cards'}
+          </Text>
           <Text style={styles.cardCount}>(500+)</Text>
         </View>
         <View style={styles.spacer} />
@@ -113,20 +125,30 @@ const MotherdayCards: React.FC<MotherdayCardsProps> = ({ onBack }) => {
         </View>
 
         {/* Category Tags */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryTagsContainer}>
-          {categories.map((category) => (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.categoryTagsContainer}
+        >
+          {categories.map(category => (
             <TouchableOpacity
               key={category}
-              onPress={() => setSelectedCategory(selectedCategory === category ? null : category)}
+              onPress={() =>
+                setSelectedCategory(
+                  selectedCategory === category ? null : category,
+                )
+              }
               style={[
                 styles.categoryTag,
                 selectedCategory === category && styles.categoryTagActive,
-              ]}>
+              ]}
+            >
               <Text
                 style={[
                   styles.categoryTagText,
                   selectedCategory === category && styles.categoryTagTextActive,
-                ]}>
+                ]}
+              >
                 {category}
               </Text>
             </TouchableOpacity>
@@ -137,7 +159,7 @@ const MotherdayCards: React.FC<MotherdayCardsProps> = ({ onBack }) => {
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
-            placeholder="Search birthday cards..."
+            placeholder="Search Mother cards..."
             placeholderTextColor="#999"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -147,14 +169,11 @@ const MotherdayCards: React.FC<MotherdayCardsProps> = ({ onBack }) => {
 
         {/* Cards Grid */}
         <View style={styles.cardsGrid}>
-          {filteredCards.map((card) => (
+          {filteredCards.map(card => (
             <TouchableOpacity key={card.id} style={styles.cardItem}>
               <View style={styles.cardImageContainer}>
                 {/* <Text style={styles.cardEmoji}>{card.image} */}
-                 <Image
-  source={card.image}
-  style={styles.bdayIcon}
-/>
+                <Image source={card.image} style={styles.bdayIcon} />
                 {/* </Text> */}
               </View>
               <Text style={styles.cardTitle}>{card.title}</Text>
@@ -174,7 +193,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-      paddingTop: 50, 
+    paddingTop: 50,
   },
   header: {
     flexDirection: 'row',
@@ -333,10 +352,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   bdayIcon: {
-  width: '100%',
-  height: '100%',
-  resizeMode: 'contain',
-}
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
+  },
 });
 
 export default MotherdayCards;

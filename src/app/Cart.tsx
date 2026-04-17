@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,57 +7,97 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Image,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
+
+import { ref, push } from 'firebase/database';
+import { db } from '../../Firebase';
 
 type CartProps = {
   onBack: () => void;
   onCheckout: () => void;
+  cartItems: any[];
+  setCartItems: (items: any[]) => void;
 };
 
-const initialCart = [
-  {
-    id: 1,
-    name: 'Hint Water Variety Pack',
-    description: '12 x 16 oz',
-    price: 19.99,
-    image: require('../assets/birth_6.png'),
-    qty: 1,
-  },
-  {
-    id: 2,
-    name: 'Charmin Ultra Strong Double Roll',
-    description: '36 Count',
-    price: 19.99,
-    image: require('../assets/birth_1.png'),
-    qty: 1,
-  },
-  {
-    id: 3,
-    name: 'Vaseline Petroleum Jelly Original',
-    description: '2 x 13 oz',
-    price: 7.99,
-    image: require('../assets/birth_4.png'),
-    qty: 1,
-  },
-];
+const Cart: React.FC<CartProps> = ({
+  onBack,
+  onCheckout,
+  cartItems,
+  setCartItems,
+}) => {
+  const [cart, setCart] = useState<any[]>([]);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
-const Cart: React.FC<CartProps> = ({ onBack, onCheckout }) => {
-  const [cart, setCart] = useState(initialCart);
-
-  const increaseQty = (id: number) => {
-    setCart(prev =>
-      prev.map(item => (item.id === id ? { ...item, qty: item.qty + 1 } : item)),
+  useEffect(() => {
+    setCart(
+      cartItems.map(item => ({
+        ...item,
+        name: item.title,
+        qty: item.qty || 1,
+      })),
     );
+  }, [cartItems]);
+
+  const increaseQty = (id: string) => {
+    setCart(prev => {
+      const updated = prev.map(item =>
+        item.id === id && item.qty < 5 ? { ...item, qty: item.qty + 1 } : item,
+      );
+
+      setCartItems(updated); // update parent here
+      return updated;
+    });
   };
 
-  const decreaseQty = (id: number) => {
-    setCart(prev =>
-      prev.map(item =>
-        item.id === id && item.qty > 1
-          ? { ...item, qty: item.qty - 1 }
-          : item,
-      ),
-    );
+  const decreaseQty = (id: string) => {
+    setCart(prev => {
+      const updated = prev
+        .map(item => (item.id === id ? { ...item, qty: item.qty - 1 } : item))
+        .filter(item => item.qty > 0);
+
+      setCartItems(updated); // 🔥 update parent here
+      return updated;
+    });
+  };
+
+  const handleCheckout = async () => {
+    if (cart.length == 0) {
+      Alert.alert(
+        'Oops! 🛍️',
+        'Your cart feels lonely... add some gifts first!',
+      );
+      return;
+    }
+    setIsCheckingOut(true);
+
+    try {
+      const cartref = ref(db, 'carts');
+      const cartData = {
+        createdAt: Date.now(),
+        status: 'pending',
+        userId: null, // 📌 replace with auth user ID later
+        subtotal: subtotal,
+        items: cart.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.qty,
+          image: item.image || null,
+          description: item.description || null,
+        })),
+      };
+      const newCartRef = await push(cartref, cartData);
+      console.log('Cart pushed to Firebase with ID:', newCartRef.key);
+
+      setCartItems([]);
+
+      onCheckout();
+    } catch (error) {
+      console.error('Checkout error:', error);
+      Alert.alert('Checkout Failed', 'Something went wrong. Please try again.');
+    }
   };
 
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.qty, 0);
@@ -91,7 +131,14 @@ const Cart: React.FC<CartProps> = ({ onBack, onCheckout }) => {
       <ScrollView showsVerticalScrollIndicator={false}>
         {cart.map(item => (
           <View key={item.id} style={styles.itemContainer}>
-            <Image source={item.image} style={styles.itemImage} />
+            <Image
+              source={
+                item.image
+                  ? { uri: item.image }
+                  : require('../assets/birth_1.png')
+              }
+              style={styles.itemImage}
+            />
 
             <View style={styles.itemDetails}>
               <Text style={styles.itemName}>{item.name}</Text>
@@ -102,7 +149,8 @@ const Cart: React.FC<CartProps> = ({ onBack, onCheckout }) => {
             <View style={styles.qtyContainer}>
               <TouchableOpacity
                 style={styles.qtyButton}
-                onPress={() => decreaseQty(item.id)}>
+                onPress={() => decreaseQty(item.id)}
+              >
                 <Text style={styles.qtyText}>−</Text>
               </TouchableOpacity>
 
@@ -110,7 +158,8 @@ const Cart: React.FC<CartProps> = ({ onBack, onCheckout }) => {
 
               <TouchableOpacity
                 style={styles.qtyButton}
-                onPress={() => increaseQty(item.id)}>
+                onPress={() => increaseQty(item.id)}
+              >
                 <Text style={styles.qtyText}>+</Text>
               </TouchableOpacity>
             </View>
@@ -125,8 +174,16 @@ const Cart: React.FC<CartProps> = ({ onBack, onCheckout }) => {
           <Text style={styles.subtotalPrice}>${subtotal.toFixed(2)}</Text>
         </View>
 
-        <TouchableOpacity style={styles.checkoutButton} onPress={onCheckout}>
-          <Text style={styles.checkoutText}>PROCEED TO CHECKOUT</Text>
+        <TouchableOpacity
+          style={[styles.checkoutButton, isCheckingOut && { opacity: 0.6 }]}
+          onPress={handleCheckout}
+          disabled={isCheckingOut}
+        >
+          {isCheckingOut ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.checkoutText}>PROCEED TO CHECKOUT</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -298,7 +355,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 15,
     fontWeight: 'bold',
-
   },
 });
 

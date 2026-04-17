@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "680230299849",
+    "firebase_url": "https://notify-c3bf1-default-rtdb.firebaseio.com",
+    "project_id": "notify-c3bf1",
+    "storage_bucket": "notify-c3bf1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:680230299849:android:f2a2b14808ea9466624518",
+        "android_client_info": {
+          "package_name": "com.example.notify"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDaJrbXvdFqG8Of7vmHHDaRxx_wbfo2pAg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:680230299849:android:6ec15fa1d6af414e624518",
+        "android_client_info": {
+          "package_name": "com.holycard"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDaJrbXvdFqG8Of7vmHHDaRxx_wbfo2pAg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

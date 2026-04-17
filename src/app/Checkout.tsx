@@ -9,17 +9,59 @@ import {
   Image,
 } from 'react-native';
 
+import { useStripe } from '@stripe/stripe-react-native';
+import { StripeProvider } from '@stripe/stripe-react-native';
+
 type CheckoutProps = {
   onBack: () => void;
   onOrderSuccess: () => void;
 };
 
 const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderSuccess }) => {
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const [cardNumber, setCardNumber] = useState('1234 5678 8901 2345');
   const [name, setName] = useState('Elliot Alderson');
   const [expiry, setExpiry] = useState('01/20');
   const [cvv, setCvv] = useState('123');
-  const [paymentMethod, setPaymentMethod] = useState('credit-card');
+  const [paymentMethod, setPaymentMethod] = useState('apple-pay');
+
+  const handlePayment = async () => {
+    console.log('button clicked');
+    try {
+      // 🔥 1. Call backend
+      const response = await fetch(
+        'http://192.168.1.3:3000/create-payment-intent',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: 100 }), // replace with your subtotal
+        },
+      );
+      console.log('backend called');
+
+      const { clientSecret } = await response.json();
+      const data = await response.json;
+      console.log('response', data);
+
+      // 🔥 2. Initialize Stripe
+      await initPaymentSheet({
+        paymentIntentClientSecret: clientSecret,
+        merchantDisplayName: 'Holy Card',
+      });
+
+      // 🔥 3. Open Stripe UI
+      const { error } = await presentPaymentSheet();
+
+      if (error) {
+        console.log('Payment error:', error);
+      } else {
+        console.log('Payment success ✅');
+        onOrderSuccess(); // 👉 move to success screen
+      }
+    } catch (e) {
+      console.log('Payment failed:', e);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -54,20 +96,33 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderSuccess }) => {
         <Text style={styles.sectionTitle}>PAYMENT METHOD</Text>
 
         <View style={styles.paymentMethods}>
-          <TouchableOpacity 
-            style={paymentMethod === 'credit-card' ? styles.cardActive : styles.cardInactive}
+          <TouchableOpacity
+            style={
+              paymentMethod === 'credit-card'
+                ? styles.cardActive
+                : styles.cardInactive
+            }
             onPress={() => setPaymentMethod('credit-card')}
           >
-            <Image source={require('../assets/credit_card.png')} style={styles.paymentIcon} />
+            <Image
+              source={require('../assets/credit_card.png')}
+              style={styles.paymentIcon}
+            />
             {/* <Text style={styles.cardText}>Credit Card</Text> */}
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={paymentMethod === 'paypal' ? styles.cardActive : styles.cardInactive}
-            onPress={() => setPaymentMethod('paypal')}
+          <TouchableOpacity
+            style={
+              paymentMethod === 'apple-pay'
+                ? styles.cardActive
+                : styles.cardInactive
+            }
+            onPress={() => setPaymentMethod('apple-pay')}
           >
-            <Image source={require('../assets/pay_pal.png')} style={styles.paymentIcon} />
-            {/* <Text style={styles.paypalText}>PayPal</Text> */}
+            <Image
+              source={require('../assets/apple_pay.png')}
+              style={styles.paymentIcon}
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -78,11 +133,7 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderSuccess }) => {
           <Text style={styles.sectionTitle}>CREDIT CARD DETAILS</Text>
 
           <Text style={styles.inputLabel}>NAME ON CARD</Text>
-          <TextInput
-            value={name}
-            onChangeText={setName}
-            style={styles.input}
-          />
+          <TextInput value={name} onChangeText={setName} style={styles.input} />
 
           <Text style={styles.inputLabel}>CREDIT CARD NUMBER</Text>
           <TextInput
@@ -118,16 +169,20 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderSuccess }) => {
         </View>
       ) : (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>PAYPAL</Text>
-          <TouchableOpacity style={styles.paypalButton}>
-            <Text style={styles.paypalButtonText}>Login with PayPal</Text>
+          <Text style={styles.sectionTitle}>APPLE PAY</Text>
+
+          <TouchableOpacity style={styles.applePayButton}>
+            <Image
+              source={require('../assets/apple_pay.png')} // 👈 add this image
+              style={styles.applePayImage}
+            />
           </TouchableOpacity>
         </View>
       )}
 
       {/* Continue Button */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.continueButton} onPress={onOrderSuccess}>
+        <TouchableOpacity style={styles.continueButton} onPress={handlePayment}>
           <Text style={styles.continueText}>CONTINUE</Text>
         </TouchableOpacity>
       </View>
@@ -140,6 +195,19 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f6f7',
     paddingTop: 40,
+  },
+
+  applePayButton: {
+    backgroundColor: '#000',
+    borderRadius: 6,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+
+  applePayImage: {
+    width: 120,
+    height: 40,
+    resizeMode: 'contain',
   },
 
   header: {
@@ -240,6 +308,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 6,
     marginRight: 10,
+    elevation: 20,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -247,9 +316,11 @@ const styles = StyleSheet.create({
   cardInactive: {
     backgroundColor: '#f2f2f2',
     paddingVertical: 16,
+    marginRight: 10,
     paddingHorizontal: 20,
     borderRadius: 6,
     flexDirection: 'row',
+    elevation: 20,
     alignItems: 'center',
   },
 
