@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Image,
   TextInput,
-  SafeAreaView,
   Animated,
   Dimensions,
   Modal,
@@ -23,6 +22,10 @@ import More from './More';
 import Reminders from './Reminders';
 import Login from './Login';
 import { Alert } from 'react-native';
+import SignIn from './SignIn';
+import SignUp from './SignUp';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 const { width } = Dimensions.get('window');
 
 const Home = () => {
@@ -168,11 +171,22 @@ const Home = () => {
   }, []);
 
   if (currentScreen === 'login') {
-  return <Login 
+    return <Login 
       onLogin={() => {
         setCurrentScreen('home')
+        setIsDrawerOpen(false)  
+      }}
+      onNavigateToSignUp={()=> setCurrentScreen('signup')} />;
+  }
+  if(currentScreen === 'signup'){
+    const SignUp = require('./SignUp').default;
+    return <SignUp 
+      onSignUp={()=> {
+        setCurrentScreen('home')
         setIsDrawerOpen(false)
-      }} />;
+      }}
+      onNavigateToLogin={()=> setCurrentScreen('login')}
+      />
   }
 
   if (currentScreen === 'offer') {
@@ -356,7 +370,7 @@ const Home = () => {
           </Animated.View>
 
           {/* Main Content */}
-          <SafeAreaView style={styles.safeArea}>
+          <SafeAreaProvider style={styles.safeArea}>
             <ScrollView contentContainerStyle={styles.container}>
               {/* Header */}
               <View style={styles.header}>
@@ -409,7 +423,7 @@ const Home = () => {
                 animationType="slide"
                 onRequestClose={() => setIsAIChatOpen(false)}
               >
-                <SafeAreaView style={styles.chatContainer}>
+                <SafeAreaProvider style={styles.chatContainer}>
                   {/* Chat Header */}
                   <View style={styles.chatHeader}>
                     <TouchableOpacity onPress={() => setIsAIChatOpen(false)}>
@@ -457,7 +471,7 @@ const Home = () => {
                       <Text style={styles.sendText}>Send</Text>
                     </TouchableOpacity>
                   </View>
-                </SafeAreaView>
+                </SafeAreaProvider>
               </Modal>
 
               {/* Search Bar */}
@@ -587,7 +601,7 @@ const Home = () => {
                 </TouchableOpacity>
               </View>
             </ScrollView>
-          </SafeAreaView>
+          </SafeAreaProvider>
 
           {/* Calendar Modal */}
           <Modal

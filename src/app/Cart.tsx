@@ -11,8 +11,12 @@ import {
   ActivityIndicator,
 } from 'react-native';
 
-import { ref, push } from 'firebase/database';
-import { db } from '../../Firebase';
+// import { ref, push } from 'firebase/database';
+// import { db } from '../../Firebase';
+
+import auth from '@react-native-firebase/auth';
+
+import database from '@react-native-firebase/database';
 
 type CartProps = {
   onBack: () => void;
@@ -29,6 +33,7 @@ const Cart: React.FC<CartProps> = ({
 }) => {
   const [cart, setCart] = useState<any[]>([]);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  
 
   useEffect(() => {
     setCart(
@@ -46,7 +51,7 @@ const Cart: React.FC<CartProps> = ({
         item.id === id && item.qty < 5 ? { ...item, qty: item.qty + 1 } : item,
       );
 
-      setCartItems(updated); // update parent here
+      setCartItems(updated); // update parent
       return updated;
     });
   };
@@ -57,7 +62,7 @@ const Cart: React.FC<CartProps> = ({
         .map(item => (item.id === id ? { ...item, qty: item.qty - 1 } : item))
         .filter(item => item.qty > 0);
 
-      setCartItems(updated); // 🔥 update parent here
+      setCartItems(updated); // update parent here
       return updated;
     });
   };
@@ -73,11 +78,14 @@ const Cart: React.FC<CartProps> = ({
     setIsCheckingOut(true);
 
     try {
-      const cartref = ref(db, 'carts');
+      const currentUser = auth().currentUser;
+      console.log("")
+      //const cartref = ref(db, 'carts');
       const cartData = {
         createdAt: Date.now(),
         status: 'pending',
-        userId: null, // 📌 replace with auth user ID later
+        userId: currentUser?.uid ?? null,
+        userEmail: currentUser?.email ?? null,
         subtotal: subtotal,
         items: cart.map(item => ({
           id: item.id,
@@ -88,8 +96,8 @@ const Cart: React.FC<CartProps> = ({
           description: item.description || null,
         })),
       };
-      const newCartRef = await push(cartref, cartData);
-      console.log('Cart pushed to Firebase with ID:', newCartRef.key);
+      const newCartRef = await database().ref('carts').push(cartData);
+      console.log('✅ Cart pushed with ID:', newCartRef.key);
 
       setCartItems([]);
 

@@ -11,6 +11,8 @@ import {
   Alert,
 } from 'react-native';
 
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 import Toast from 'react-native-toast-message';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -101,7 +103,7 @@ const BirthdayCards: React.FC<BirthdayCardsProps> = ({
   });
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaProvider style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack}>
@@ -217,7 +219,7 @@ const BirthdayCards: React.FC<BirthdayCardsProps> = ({
       >
         <Text style={styles.addButtonText}>Add to Basket</Text>
       </TouchableOpacity>
-    </SafeAreaView>
+    </SafeAreaProvider>
   );
 };
 

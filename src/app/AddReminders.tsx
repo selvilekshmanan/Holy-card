@@ -8,6 +8,8 @@ import {
   StyleSheet,
 } from 'react-native';
 
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 type Props = {
   onBack: () => void;
 };
@@ -17,7 +19,7 @@ const AddReminder: React.FC<Props> = ({ onBack }) => {
   const [selected, setSelected] = useState('');
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaProvider style={styles.container}>
       <TouchableOpacity onPress={onBack}>
         <Text style={styles.back}>‹ Back</Text>
       </TouchableOpacity>
@@ -57,7 +59,7 @@ const AddReminder: React.FC<Props> = ({ onBack }) => {
       <TouchableOpacity style={styles.saveBtn}>
         <Text style={styles.saveText}>SAVE & ADD</Text>
       </TouchableOpacity>
-    </SafeAreaView>
+    </SafeAreaProvider>
   );
 };
 

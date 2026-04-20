@@ -11,52 +11,76 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 
+import auth from '@react-native-firebase/auth';
+
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 type Props = {
   onLogin: () => void;
+  onNavigateToSignUp: () => void;
 };
 
-const Login: React.FC<Props> = ({ onLogin }) => {
+const Login: React.FC<Props> = ({ onLogin , onNavigateToSignUp}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const correctEmail = 'test@gmail.com';
-  const correctpassword = '123456';
-  const handleLogin = () => {
-    if (!email || !password) {
-      Toast.show({
-        type:'info',
-        text1: 'Info missing',
-        text2: 'Please enter email and password'
-      })
-    }
-    if (!email.endsWith('@gmail.com')) {
-      Toast.show({
-        type: 'error',
-        text1: 'Please use valid email address',
-      });
-      return;
-    }
-    if (email !== correctEmail) {
+  const correctpassword = '0123456';
+  const isDisabled = !email || !password
+   
+  const handleLogin = async () => {
+  if (!email || !password) {
+    Toast.show({
+      type: 'info',
+      text1: 'Info missing',
+      text2: 'Please enter email and password',
+    });
+    return;
+  }
+
+  try {
+    const userCredential = await auth().signInWithEmailAndPassword(
+      email,
+      password
+    );
+    const user = userCredential.user
+    console.log('User logged in:', userCredential.user);
+    console.log('Logged in UID:', user.uid)
+
+    Toast.show({
+      type: 'success',
+      text1: 'Login successful',
+    });
+
+    onLogin(); // navigate to home
+
+  } catch (error: any) {
+    console.log(error);
+
+    if (error.code === 'auth/user-not-found') {
       Toast.show({
         type: 'error',
         text1: 'User not found',
-        text2: 'Check your email and try again',
       });
-      return;
-    }
-    if (password !== correctpassword) {
+    } else if (error.code === 'auth/wrong-password') {
       Toast.show({
         type: 'error',
-        text1: 'Wrong Password',
-        text2: 'Please try again',
+        text1: 'Wrong password',
       });
-      return;
+    } else if (error.code === 'auth/invalid-email') {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid email',
+      });
+    } else {
+      Toast.show({
+        type: 'error',
+        text1: 'Login failed',
+        text2: error.message,
+      });
     }
-    
-    onLogin();
-  };
+  }
+};
   return (
     <SafeAreaView style={styles.container}>
       <Image
@@ -85,7 +109,7 @@ const Login: React.FC<Props> = ({ onLogin }) => {
 
         <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
           <Icon
-            name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+            name={showPassword ? 'eye-outline' : 'eye-off-outline'}
             size={22}
             color="#666"
           />
@@ -96,10 +120,10 @@ const Login: React.FC<Props> = ({ onLogin }) => {
         <Text style={styles.forgot}>Forgot Password?</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
+      <TouchableOpacity style={[styles.button, isDisabled && {backgroundColor : '#ccc'}]} onPress={handleLogin} disabled = {isDisabled}>
         <Text style={styles.buttonText}>LOGIN</Text>
       </TouchableOpacity>
-      <TouchableOpacity>
+      <TouchableOpacity onPress={onNavigateToSignUp}>
       <Text style={styles.signup}>
         Don’t have an account?{' '}
         <Text style={{ color: '#0e0c0c', fontWeight: 'bold' }}>Sign up</Text>
