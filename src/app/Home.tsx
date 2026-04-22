@@ -22,6 +22,7 @@ import More from './More';
 import Reminders from './Reminders';
 import Login from './Login';
 import { Alert } from 'react-native';
+import auth from '@react-native-firebase/auth';
 import SignIn from './SignIn';
 import SignUp from './SignUp';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -42,7 +43,8 @@ const Home = () => {
   const [messages, setMessages] = useState<string[]>([]);
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [isLoad, setIsLoad] = useState(false);
-  
+
+
   React.useEffect(() => {
     Animated.timing(drawerAnim, {
       toValue: isDrawerOpen ? 0 : -width * 0.7,
@@ -58,7 +60,7 @@ const Home = () => {
     { label: 'My Cart', icon: 'cart-outline', screen: 'cart' },
     { label: 'Gift Vouchers', icon: 'ticket-percent' },
     { label: 'Reminder', icon: 'calendar-clock' },
-    { label: 'SB Plus', icon: 'star-outline' },
+    { label: 'My Orders', icon: 'shopping' },
     {
       label: 'Terms of Service',
       icon: 'file-document-outline',
@@ -138,7 +140,16 @@ const Home = () => {
 
     setCurrentScreen('cart');
   };
-
+  useEffect(() => {
+    const unsubscribe = auth().onAuthStateChanged(user => {
+      if (user) {
+        setCurrentScreen('home');
+      } else {
+        setCurrentScreen('login');
+      }
+    });
+    return unsubscribe;
+  }, []);
   useEffect(() => {
     if (!isLoad) return;
     const saveCart = async () => {
@@ -171,22 +182,27 @@ const Home = () => {
   }, []);
 
   if (currentScreen === 'login') {
-    return <Login 
-      onLogin={() => {
-        setCurrentScreen('home')
-        setIsDrawerOpen(false)  
-      }}
-      onNavigateToSignUp={()=> setCurrentScreen('signup')} />;
-  }
-  if(currentScreen === 'signup'){
-    const SignUp = require('./SignUp').default;
-    return <SignUp 
-      onSignUp={()=> {
-        setCurrentScreen('home')
-        setIsDrawerOpen(false)
-      }}
-      onNavigateToLogin={()=> setCurrentScreen('login')}
+    return (
+      <Login
+        onLogin={() => {
+          setCurrentScreen('home');
+          setIsDrawerOpen(false);
+        }}
+        onNavigateToSignUp={() => setCurrentScreen('signup')}
       />
+    );
+  }
+  if (currentScreen === 'signup') {
+    const SignUp = require('./SignUp').default;
+    return (
+      <SignUp
+        onSignUp={() => {
+          setCurrentScreen('login');
+          setIsDrawerOpen(false);
+        }}
+        onNavigateToLogin={() => setCurrentScreen('login')}
+      />
+    );
   }
 
   if (currentScreen === 'offer') {
@@ -275,116 +291,117 @@ const Home = () => {
     );
   }
   return (
-      (
-        <View style={styles.mainContainer}>
-          {/* Drawer Overlay */}
-          {isDrawerOpen && (
-            <TouchableOpacity
-              style={styles.overlay}
-              onPress={() => setIsDrawerOpen(false)}
-              activeOpacity={0.8}
-            />
-          )}
+    <View style={styles.mainContainer}>
+      {/* Drawer Overlay */}
+      {isDrawerOpen && (
+        <TouchableOpacity
+          style={styles.overlay}
+          onPress={() => setIsDrawerOpen(false)}
+          activeOpacity={0.8}
+        />
+      )}
 
-          {/* Drawer Menu */}
-          <Animated.View
-            style={[
-              styles.drawer,
-              {
-                transform: [{ translateX: drawerAnim }],
-              },
-            ]}
-          >
-            <View style={styles.drawerHeader}>
-              <TouchableOpacity onPress={() => setIsDrawerOpen(false)}>
-                <Text style={styles.closeIcon}>✕</Text>
-              </TouchableOpacity>
-              <Image
-                style={styles.logo}
-                source={{
-                  uri: 'https://simplyboxed.co.uk/cdn/shop/files/Logo_1.png?v=1771982840&width=352',
-                }}
-              />
-            </View>
+      {/* Drawer Menu */}
+      <Animated.View
+        style={[
+          styles.drawer,
+          {
+            transform: [{ translateX: drawerAnim }],
+          },
+        ]}
+      >
+        <View style={styles.drawerHeader}>
+          <TouchableOpacity onPress={() => setIsDrawerOpen(false)}>
+            <Text style={styles.closeIcon}>✕</Text>
+          </TouchableOpacity>
+          <Image
+            style={styles.logo}
+            source={{
+              uri: 'https://simplyboxed.co.uk/cdn/shop/files/Logo_1.png?v=1771982840&width=352',
+            }}
+          />
+        </View>
 
-            <ScrollView style={styles.drawerContent}>
-              {/* <TextInput
+        <ScrollView style={styles.drawerContent}>
+          {/* <TextInput
             style={styles.drawerSearch}
             placeholder="Search for cards, gifts and...🌷"
             placeholderTextColor="#999"
           /> */}
 
-              {menuItems.map((item, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.menuItem}
-                  onPress={() => {
-                    console.log('label clicked', item.label);
-                    if (item.label === "Mother's Day") {
-                      setCurrentScreen('MotherdayCards');
-                    }
-                    if (item.label === 'Birthday') {
-                      setCurrentScreen('birthdayCards');
-                    }
-                    if (item.label === 'Valentine') {
-                      setCurrentScreen('valentineCards');
-                    }
-                    if (item.label === 'My Cart') {
-                      setCurrentScreen('cart');
-                    }
-                    if (item.label === 'Terms of Service') {
-                      setCurrentScreen('terms');
-                    }
-                    if (item.label === 'More') {
-                      setCurrentScreen('more');
-                    }
-                    if (item.label === 'Reminder') {
-                      setCurrentScreen('reminders');
-                    }
-                    if (item.label === 'Logout'){
-                      Alert.alert("Sign out", "Are you sure you want to logout?",
-                        [{
-                          text: "No",
-                          style: "cancel",
-                        },
-                        {
-                          text: "Yes",
-                          onPress:() =>setCurrentScreen('login')
-                        }
-                      ]
-                      )
-                    }
-                  }}
-                >
-                  <Icon
-                    name={item.icon}
-                    size={25}
-                    color="#333"
-                    style={{ marginRight: 10 }}
-                  />
-                  <Text style={styles.menuLabel}>{item.label}</Text>
-                  <Text style={styles.menuArrow}>›</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </Animated.View>
+          {menuItems.map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.menuItem}
+              onPress={() => {
+                console.log('label clicked', item.label);
+                if (item.label === "Mother's Day") {
+                  setCurrentScreen('MotherdayCards');
+                }
+                if (item.label === 'Birthday') {
+                  setCurrentScreen('birthdayCards');
+                }
+                if (item.label === 'Valentine') {
+                  setCurrentScreen('valentineCards');
+                }
+                if (item.label === 'My Cart') {
+                  setCurrentScreen('cart');
+                }
+                if (item.label === 'Terms of Service') {
+                  setCurrentScreen('terms');
+                }
+                if (item.label === 'More') {
+                  setCurrentScreen('more');
+                }
+                if (item.label === 'Reminder') {
+                  setCurrentScreen('reminders');
+                }
+                if (item.label === 'Logout') {
+                  Alert.alert('Sign out', 'Are you sure you want to logout?', [
+                    {
+                      text: 'No',
+                      style: 'cancel',
+                    },
+                    {
+                      text: 'Yes',
+                      //onPress:() =>setCurrentScreen('login')
+                      onPress: async () => {
+                        await auth().signOut(); 
+                      },
+                    },
+                  ]);
+                }
+              }}
+            >
+              <Icon
+                name={item.icon}
+                size={25}
+                color="#333"
+                style={{ marginRight: 10 }}
+              />
+              <Text style={styles.menuLabel}>{item.label}</Text>
+              <Text style={styles.menuArrow}>›</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </Animated.View>
 
-          {/* Main Content */}
-          <SafeAreaProvider style={styles.safeArea}>
-            <ScrollView contentContainerStyle={styles.container}>
-              {/* Header */}
-              <View style={styles.header}>
-                <TouchableOpacity onPress={() => setIsDrawerOpen(true)}>
-                  <Text style={styles.hamburger}>☰</Text>
-                </TouchableOpacity>
-                <Image
-                  style={styles.logo}
-                  source={{
-                    uri: 'https://simplyboxed.co.uk/cdn/shop/files/Logo_1.png?v=1771982840&width=352',
-                  }}
-                />
-                {/* AI Assistant in Header */}
-                {/* <TouchableOpacity
+      {/* Main Content */}
+      <SafeAreaProvider style={styles.safeArea}>
+        <ScrollView contentContainerStyle={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => setIsDrawerOpen(true)}>
+              <Text style={styles.hamburger}>☰</Text>
+            </TouchableOpacity>
+            <Image
+              style={styles.logo}
+              source={{
+                uri: 'https://simplyboxed.co.uk/cdn/shop/files/Logo_1.png?v=1771982840&width=352',
+              }}
+            />
+            {/* AI Assistant in Header */}
+            {/* <TouchableOpacity
           style={styles.aiAssistantContainer}
           onPress={() => setIsAIChatOpen(true)}
         >
@@ -392,307 +409,293 @@ const Home = () => {
           <Text style={styles.aiAssistantText}>AI Assistant</Text>
         </TouchableOpacity> */}
 
-                <View style={styles.headerRight}>
-                  {/* Globe */}
-                  <TouchableOpacity>
-                    <Icon name="earth" size={22} color="#333" />
-                  </TouchableOpacity>
-
-                  {/* Calendar */}
-                  <TouchableOpacity onPress={() => setIsCalendarOpen(true)}>
-                    <Icon
-                      name="calendar-month-outline"
-                      size={22}
-                      color="#333"
-                    />
-                  </TouchableOpacity>
-
-                  {/* Profile */}
-                  <TouchableOpacity>
-                    <Icon name="account-outline" size={22} color="#333" />
-                  </TouchableOpacity>
-
-                  {/* Cart */}
-                  <TouchableOpacity onPress={() => setCurrentScreen('cart')}>
-                    <Icon name="shopping-outline" size={22} color="#333" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-              <Modal
-                visible={isAIChatOpen}
-                animationType="slide"
-                onRequestClose={() => setIsAIChatOpen(false)}
-              >
-                <SafeAreaProvider style={styles.chatContainer}>
-                  {/* Chat Header */}
-                  <View style={styles.chatHeader}>
-                    <TouchableOpacity onPress={() => setIsAIChatOpen(false)}>
-                      <Text style={styles.closeText}>Close</Text>
-                    </TouchableOpacity>
-
-                    <Text style={styles.chatTitle}>AI Assistant</Text>
-
-                    <View style={{ width: 60 }} />
-                  </View>
-
-                  {/* Chat Messages */}
-                  <ScrollView style={styles.messagesContainer}>
-                    {messages.length === 0 ? (
-                      <View style={styles.emptyState}>
-                        <Text style={styles.emptyText}>
-                          Start chatting with AI 🤖
-                        </Text>
-                        <Text style={styles.emptySubText}>
-                          Ask about gifts, birthday reminders, cards, etc.
-                        </Text>
-                      </View>
-                    ) : (
-                      messages.map((msg, index) => (
-                        <View key={index} style={styles.messageBubble}>
-                          <Text style={styles.messageText}>{msg}</Text>
-                        </View>
-                      ))
-                    )}
-                  </ScrollView>
-
-                  {/* Chat Input */}
-                  <View style={styles.inputContainer}>
-                    <TextInput
-                      placeholder="Type your message..."
-                      value={message}
-                      onChangeText={setMessage}
-                      style={styles.input}
-                    />
-
-                    <TouchableOpacity
-                      style={styles.sendButton}
-                      onPress={handleSend}
-                    >
-                      <Text style={styles.sendText}>Send</Text>
-                    </TouchableOpacity>
-                  </View>
-                </SafeAreaProvider>
-              </Modal>
-
-              {/* Search Bar */}
-              <View style={styles.searchContainer}>
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Search for cards, gifts and flowers🌷..."
-                  placeholderTextColor="#999"
-                />
-                <Icon
-                  name="magnify"
-                  size={25}
-                  color="#999"
-                  style={styles.searchIcon}
-                />
-              </View>
-
-              {/* Promotional Banner */}
-              <TouchableOpacity onPress={() => setCurrentScreen('offer')}>
-                <View style={styles.banner}>
-                  <View>
-                    <Text style={styles.bannerText}>
-                      CODE: NEWAPP | Upto 5% off
-                    </Text>
-                    <Text style={styles.bannerCode}>On 1st App Order</Text>
-                    <Text style={styles.terms}>
-                      T&C Apply | Applicable only on your first App order
-                    </Text>
-                  </View>
-                  <Text style={styles.bannerArrow}>›</Text>
-                </View>
+            <View style={styles.headerRight}>
+              {/* Globe */}
+              <TouchableOpacity>
+                <Icon name="earth" size={22} color="#333" />
               </TouchableOpacity>
 
-              {/* Category Cards */}
-              <View style={styles.categoriesContainer}>
-                <TouchableOpacity
-                  style={styles.categoryCard}
-                  onPress={() => setCurrentScreen('birthdayCards')}
-                >
-                  {/* <View style={[styles.categoryImage, styles.categoryImageBirthday]}> */}
-                  {/* <Text >🎉</Text> */}
-                  <Image
-                    style={styles.logo}
-                    source={{
-                      uri: 'https://cdnnew.igp.com/f_auto,q_auto,t_pnopt12prodlp/products/p-picture-perfect-wishes-423564-m.jpg',
-                    }}
-                  />
-                  {/* </View> */}
-                  <Text style={styles.categoryLabel}>Birthday{'\n'}Gift</Text>
-                </TouchableOpacity>
+              {/* Calendar */}
+              <TouchableOpacity onPress={() => setIsCalendarOpen(true)}>
+                <Icon name="calendar-month-outline" size={22} color="#333" />
+              </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.categoryCard}
-                  onPress={() => setCurrentScreen('valentineCards')}
-                >
-                  <View
-                    style={[styles.categoryImage, styles.categoryImageMother]}
-                  >
-                    <Image
-                      style={styles.logo}
-                      source={{
-                        uri: 'https://cdnnew.igp.com/f_auto,q_auto,t_pnopt12prodlp/products/p-heartfelt-wishes-duo-personalized-390882-m.jpg',
-                      }}
-                    />
-                  </View>
-                  <Text style={styles.categoryLabel}>
-                    Valentine's{'\n'}Day Gift
-                  </Text>
-                </TouchableOpacity>
+              {/* Profile */}
+              <TouchableOpacity>
+                <Icon name="account-outline" size={22} color="#333" />
+              </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.categoryCard}
-                  onPress={() => setCurrentScreen('MotherdayCards')}
-                >
-                  <View
-                    style={[styles.categoryImage, styles.categoryImageMother]}
-                  >
-                    <Image
-                      style={styles.logo}
-                      source={{
-                        uri: 'https://cdnnew.igp.com/f_auto,q_auto,t_pnopt12prodlp/products/p-i-heart-mom-box-278967-1.jpg',
-                      }}
-                    />
-                  </View>
-                  <Text style={styles.categoryLabel}>
-                    Mother's{'\n'}Day Gift
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Featured Section */}
-              <View style={styles.featuredSection}>
-                <View style={styles.imageWrapper}>
-                  <Image
-                    source={require('../../src/assets/mothersday.jpg')}
-                    style={styles.featuredImage}
-                  />
-
-                  {/* 🤖 Floating button ON IMAGE */}
-                  <TouchableOpacity
-                    style={styles.imageFloatingIcon}
-                    onPress={() => setIsAIChatOpen(true)}
-                  >
-                    <Icon name="robot-outline" size={28} color="#fff" />
-                  </TouchableOpacity>
-                </View>
-
-                <Text style={styles.featuredTitle}>
-                  Mother's Day is this Sunday!
-                </Text>
-                <Text style={styles.featuredDescription}>
-                  Get your cards & gifts delivered in time. Order now!
-                </Text>
-
-                {/* Shop Button */}
-                <TouchableOpacity style={styles.shopButton}>
-                  <Text style={styles.shopButtonText}>
-                    Shop Mother's Day Cards
-                  </Text>
-                </TouchableOpacity>
-
-                {/* Secondary Button */}
-                <TouchableOpacity style={styles.secondaryButton}>
-                  <Text style={styles.secondaryButtonText}>
-                    Shop Mother's Day Gifts & Flowers🌷
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
-          </SafeAreaProvider>
-
-          {/* Calendar Modal */}
+              {/* Cart */}
+              <TouchableOpacity onPress={() => setCurrentScreen('cart')}>
+                <Icon name="shopping-outline" size={22} color="#333" />
+              </TouchableOpacity>
+            </View>
+          </View>
           <Modal
-            visible={isCalendarOpen}
-            transparent={true}
-            animationType="fade"
-            onRequestClose={() => setIsCalendarOpen(false)}
+            visible={isAIChatOpen}
+            animationType="slide"
+            onRequestClose={() => setIsAIChatOpen(false)}
           >
-            <View style={styles.calendarOverlay}>
-              <View style={styles.calendarModal}>
-                <View style={styles.calendarHeader}>
-                  <TouchableOpacity
-                    onPress={() => {
-                      const newDate = new Date(selectedDate);
-                      newDate.setMonth(newDate.getMonth() - 1);
-                      setSelectedDate(newDate);
-                    }}
-                  >
-                    <Text style={styles.calendarNavButton}>‹</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.calendarTitle}>{monthYear}</Text>
-                  <TouchableOpacity
-                    onPress={() => {
-                      const newDate = new Date(selectedDate);
-                      newDate.setMonth(newDate.getMonth() + 1);
-                      setSelectedDate(newDate);
-                    }}
-                  >
-                    <Text style={styles.calendarNavButton}>›</Text>
-                  </TouchableOpacity>
-                </View>
+            <SafeAreaProvider style={styles.chatContainer}>
+              {/* Chat Header */}
+              <View style={styles.chatHeader}>
+                <TouchableOpacity onPress={() => setIsAIChatOpen(false)}>
+                  <Text style={styles.closeText}>Close</Text>
+                </TouchableOpacity>
 
-                <View style={styles.calendarWeekDays}>
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(
-                    (day, idx) => (
-                      <Text key={idx} style={styles.weekDay}>
+                <Text style={styles.chatTitle}>AI Assistant</Text>
+
+                <View style={{ width: 60 }} />
+              </View>
+
+              {/* Chat Messages */}
+              <ScrollView style={styles.messagesContainer}>
+                {messages.length === 0 ? (
+                  <View style={styles.emptyState}>
+                    <Text style={styles.emptyText}>
+                      Start chatting with AI 🤖
+                    </Text>
+                    <Text style={styles.emptySubText}>
+                      Ask about gifts, birthday reminders, cards, etc.
+                    </Text>
+                  </View>
+                ) : (
+                  messages.map((msg, index) => (
+                    <View key={index} style={styles.messageBubble}>
+                      <Text style={styles.messageText}>{msg}</Text>
+                    </View>
+                  ))
+                )}
+              </ScrollView>
+
+              {/* Chat Input */}
+              <View style={styles.inputContainer}>
+                <TextInput
+                  placeholder="Type your message..."
+                  value={message}
+                  onChangeText={setMessage}
+                  style={styles.input}
+                />
+
+                <TouchableOpacity
+                  style={styles.sendButton}
+                  onPress={handleSend}
+                >
+                  <Text style={styles.sendText}>Send</Text>
+                </TouchableOpacity>
+              </View>
+            </SafeAreaProvider>
+          </Modal>
+
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search for cards, gifts and flowers🌷..."
+              placeholderTextColor="#999"
+            />
+            <Icon
+              name="magnify"
+              size={25}
+              color="#999"
+              style={styles.searchIcon}
+            />
+          </View>
+
+          {/* Promotional Banner */}
+          <TouchableOpacity onPress={() => setCurrentScreen('offer')}>
+            <View style={styles.banner}>
+              <View>
+                <Text style={styles.bannerText}>
+                  CODE: NEWAPP | Upto 5% off
+                </Text>
+                <Text style={styles.bannerCode}>On 1st App Order</Text>
+                <Text style={styles.terms}>
+                  T&C Apply | Applicable only on your first App order
+                </Text>
+              </View>
+              <Text style={styles.bannerArrow}>›</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Category Cards */}
+          <View style={styles.categoriesContainer}>
+            <TouchableOpacity
+              style={styles.categoryCard}
+              onPress={() => setCurrentScreen('birthdayCards')}
+            >
+              {/* <View style={[styles.categoryImage, styles.categoryImageBirthday]}> */}
+              {/* <Text >🎉</Text> */}
+              <Image
+                style={styles.logo}
+                source={{
+                  uri: 'https://cdnnew.igp.com/f_auto,q_auto,t_pnopt12prodlp/products/p-picture-perfect-wishes-423564-m.jpg',
+                }}
+              />
+              {/* </View> */}
+              <Text style={styles.categoryLabel}>Birthday{'\n'}Gift</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.categoryCard}
+              onPress={() => setCurrentScreen('valentineCards')}
+            >
+              <View style={[styles.categoryImage, styles.categoryImageMother]}>
+                <Image
+                  style={styles.logo}
+                  source={{
+                    uri: 'https://cdnnew.igp.com/f_auto,q_auto,t_pnopt12prodlp/products/p-heartfelt-wishes-duo-personalized-390882-m.jpg',
+                  }}
+                />
+              </View>
+              <Text style={styles.categoryLabel}>
+                Valentine's{'\n'}Day Gift
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.categoryCard}
+              onPress={() => setCurrentScreen('MotherdayCards')}
+            >
+              <View style={[styles.categoryImage, styles.categoryImageMother]}>
+                <Image
+                  style={styles.logo}
+                  source={{
+                    uri: 'https://cdnnew.igp.com/f_auto,q_auto,t_pnopt12prodlp/products/p-i-heart-mom-box-278967-1.jpg',
+                  }}
+                />
+              </View>
+              <Text style={styles.categoryLabel}>Mother's{'\n'}Day Gift</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Featured Section */}
+          <View style={styles.featuredSection}>
+            <View style={styles.imageWrapper}>
+              <Image
+                source={require('../../src/assets/mothersday.jpg')}
+                style={styles.featuredImage}
+              />
+
+              {/* 🤖 Floating button ON IMAGE */}
+              <TouchableOpacity
+                style={styles.imageFloatingIcon}
+                onPress={() => setIsAIChatOpen(true)}
+              >
+                <Icon name="robot-outline" size={28} color="#fff" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.featuredTitle}>
+              Mother's Day is this Sunday!
+            </Text>
+            <Text style={styles.featuredDescription}>
+              Get your cards & gifts delivered in time. Order now!
+            </Text>
+
+            {/* Shop Button */}
+            <TouchableOpacity style={styles.shopButton}>
+              <Text style={styles.shopButtonText}>Shop Mother's Day Cards</Text>
+            </TouchableOpacity>
+
+            {/* Secondary Button */}
+            <TouchableOpacity style={styles.secondaryButton}>
+              <Text style={styles.secondaryButtonText}>
+                Shop Mother's Day Gifts & Flowers🌷
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </SafeAreaProvider>
+
+      {/* Calendar Modal */}
+      <Modal
+        visible={isCalendarOpen}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsCalendarOpen(false)}
+      >
+        <View style={styles.calendarOverlay}>
+          <View style={styles.calendarModal}>
+            <View style={styles.calendarHeader}>
+              <TouchableOpacity
+                onPress={() => {
+                  const newDate = new Date(selectedDate);
+                  newDate.setMonth(newDate.getMonth() - 1);
+                  setSelectedDate(newDate);
+                }}
+              >
+                <Text style={styles.calendarNavButton}>‹</Text>
+              </TouchableOpacity>
+              <Text style={styles.calendarTitle}>{monthYear}</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  const newDate = new Date(selectedDate);
+                  newDate.setMonth(newDate.getMonth() + 1);
+                  setSelectedDate(newDate);
+                }}
+              >
+                <Text style={styles.calendarNavButton}>›</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.calendarWeekDays}>
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(
+                (day, idx) => (
+                  <Text key={idx} style={styles.weekDay}>
+                    {day}
+                  </Text>
+                ),
+              )}
+            </View>
+
+            <View style={styles.calendarDaysContainer}>
+              {calendarDays.map((day, idx) => {
+                const isSelectedDate =
+                  day !== null && day === selectedDate.getDate();
+
+                return (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[
+                      styles.calendarDay,
+                      day === null && styles.calendarDayEmpty,
+                      isSelectedDate && styles.calendarDaySelected,
+                    ]}
+                    onPress={() => {
+                      if (day !== null) {
+                        const newDate = new Date(selectedDate);
+                        newDate.setDate(day);
+                        setSelectedDate(newDate);
+                        setIsCalendarOpen(false);
+                      }
+                    }}
+                  >
+                    {day !== null && (
+                      <Text
+                        style={[
+                          styles.calendarDayText,
+                          isSelectedDate && styles.calendarDaySelectedText,
+                        ]}
+                      >
                         {day}
                       </Text>
-                    ),
-                  )}
-                </View>
-
-                <View style={styles.calendarDaysContainer}>
-                  {calendarDays.map((day, idx) => {
-                    const isSelectedDate =
-                      day !== null && day === selectedDate.getDate();
-
-                    return (
-                      <TouchableOpacity
-                        key={idx}
-                        style={[
-                          styles.calendarDay,
-                          day === null && styles.calendarDayEmpty,
-                          isSelectedDate && styles.calendarDaySelected,
-                        ]}
-                        onPress={() => {
-                          if (day !== null) {
-                            const newDate = new Date(selectedDate);
-                            newDate.setDate(day);
-                            setSelectedDate(newDate);
-                            setIsCalendarOpen(false);
-                          }
-                        }}
-                      >
-                        {day !== null && (
-                          <Text
-                            style={[
-                              styles.calendarDayText,
-                              isSelectedDate && styles.calendarDaySelectedText,
-                            ]}
-                          >
-                            {day}
-                          </Text>
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-
-                <TouchableOpacity
-                  style={styles.calendarCloseButton}
-                  onPress={() => setIsCalendarOpen(false)}
-                >
-                  <Text style={styles.calendarCloseButtonText}>Close</Text>
-                </TouchableOpacity>
-              </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
             </View>
-          </Modal>
+
+            <TouchableOpacity
+              style={styles.calendarCloseButton}
+              onPress={() => setIsCalendarOpen(false)}
+            >
+              <Text style={styles.calendarCloseButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      )
-   
+      </Modal>
+    </View>
   );
 };
 

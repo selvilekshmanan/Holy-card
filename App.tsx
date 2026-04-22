@@ -14,17 +14,19 @@ import { StripeProvider } from '@stripe/stripe-react-native';
 import Login from './src/app/Login';
 import SignUp from './src/app/SignUp';
 import { useState } from 'react';
-
+import { useEffect } from 'react';
+import auth from '@react-native-firebase/auth';
+import { subscribe } from 'firebase/data-connect';
 
 function App() {
 
   const isDarkMode = useColorScheme() === 'dark';
+ 
 
   return (
     <StripeProvider publishableKey='pk_test_51THKGP4hdt18sDUOKjba9Y9DYkXEpX25iqUUhtpJER0PLzKLoJYLrwbJAaJcFW2RiH7r3hYvMgVNg7lnG1S6wWCK00QJMROoIK'>
     <SafeAreaProvider>
-      <StatusBar backgroundColor="#ffffff" 
-      barStyle="dark-content"/>
+      <StatusBar backgroundColor="#ffffff" barStyle="dark-content"/>
       <Home />
       <Toast/>
     </SafeAreaProvider>

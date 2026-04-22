@@ -47,6 +47,7 @@ const SignUp: React.FC<Props> = ({ onSignUp, onNavigateToLogin }) => {
     setLoading(true);
     try {
       await auth().createUserWithEmailAndPassword(email, password);
+      await auth().signOut();
       onSignUp(); // navigate to home
     } catch (error: any) {
       const msg =
