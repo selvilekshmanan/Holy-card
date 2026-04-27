@@ -7,8 +7,11 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Toast from 'react-native-toast-message';
+import database from '@react-native-firebase/database';
 
 type Props = {
   onBack: () => void;
@@ -17,13 +20,47 @@ type Props = {
 const AddReminder: React.FC<Props> = ({ onBack }) => {
   const [name, setName] = useState('');
   const [selected, setSelected] = useState('');
+  const [date, setDate] = useState(new Date());
+  const [showPicker, setShowPicker] = useState(false);
+  const [relation, setRelation] = useState('');
 
+  const relations = ['Friend', 'Mom', 'Dad', 'Brother', 'Sister', 'Girl friend', 'Boy Friend', 'Love', 'Son', 'Daughter', 'Others'];
+  // Validation
+  const isFormValid = 
+   name.trim() !== ''&&
+   selected !== '' &&
+   (selected === 'anniversary' || relation !== '') &&
+   date !== null
+
+   const handleSave = async ()=>{
+     try {
+      const newRef = database().ref('/reminder').push();
+
+      await newRef.set({
+        name,
+        occasion: selected,
+        relation,
+        date: date.toISOString
+      })
+     console.log("Saved to Firebase")
+
+     setName('')
+     setRelation('');
+     setSelected('');
+      
+     } catch (error) {
+      console.log("Error saving:", error);
+     }
+   }
   return (
-    <SafeAreaProvider style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      {/* Back */}
       <TouchableOpacity onPress={onBack}>
         <Text style={styles.back}>‹ Back</Text>
       </TouchableOpacity>
+
       <View style={styles.content}>
+        {/* Name */}
         <Text style={styles.label}>Enter their name(s):</Text>
         <TextInput
           style={styles.input}
@@ -32,6 +69,7 @@ const AddReminder: React.FC<Props> = ({ onBack }) => {
           onChangeText={setName}
         />
 
+        {/* Occasion */}
         <Text style={styles.label}>Choose Occasion:</Text>
 
         <View style={styles.row}>
@@ -53,29 +91,134 @@ const AddReminder: React.FC<Props> = ({ onBack }) => {
           </TouchableOpacity>
         </View>
 
+        {/* Date */}
         <Text style={styles.label}>Choose Date:</Text>
-        <TextInput style={styles.input} placeholder="Eg: 22 Oct" />
+
+        <TouchableOpacity onPress={() => setShowPicker(true)}>
+          <View style={styles.dateContainer}>
+            <Text style={styles.dateText}>
+              {date.toLocaleDateString('en-IN', {
+                day: 'numeric',
+                month: 'short',
+              })}
+            </Text>
+
+            <Icon name="calendar-month-outline" size={22} color="#555" />
+          </View>
+        </TouchableOpacity>
+        {selected === 'birthday' && (
+          <>
+            <Text style={styles.label}>Select Relation: </Text>
+            <View style={styles.relationRow}>
+              {relations.map(item => (
+                <TouchableOpacity
+                  key={item}
+                  style={[
+                    styles.relationBox,
+                    relation === item && styles.selectedRelation,
+                  ]}
+                  onPress={() => setRelation(item)}
+                >
+                  <Text>{item}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </>
+        )}
+
+        {/* Calendar */}
+        {showPicker && (
+          <DateTimePicker
+            value={date}
+            mode="date"
+            display="default"
+            onChange={(event, selectedDate) => {
+              setShowPicker(false);
+              if (selectedDate) {
+                setDate(selectedDate);
+              }
+            }}
+          />
+        )}
       </View>
-      <TouchableOpacity style={styles.saveBtn}>
-        <Text style={styles.saveText}>SAVE & ADD</Text>
-      </TouchableOpacity>
-    </SafeAreaProvider>
+
+      {/* Bottom Button */}
+      <View style={styles.footer}>
+        <TouchableOpacity style={styles.saveBtn} onPress={()=>{
+          if (!isFormValid){
+            Toast.show({
+              type: 'error',
+              text1: 'Missing Info',
+              text2: 'Please fill all fields',
+            })
+            return
+          } 
+        handleSave()
+        } 
+        }>
+          <Text style={styles.saveText}>SAVE & ADD</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 };
 
 export default AddReminder;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-
-  back: { marginBottom: 10 },
-
-  label: {
-    fontWeight: 'bold',
-    marginTop: 15,
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: 20,
   },
+
+  relationRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 10,
+  },
+
+  relationBox: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+
+  selectedRelation: {
+    backgroundColor: '#dfe8ec',
+    borderColor: '#ddd',
+  },
+
   content: {
     flex: 1,
+  },
+
+  back: {
+    fontSize: 16,
+    marginBottom: 10,
+  },
+
+  dateContainer: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  dateText: {
+    color: '#333',
+  },
+  label: {
+    marginTop: 15,
+    marginBottom: 5,
+    fontWeight: '500',
   },
 
   input: {
@@ -83,39 +226,39 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
-    marginTop: 8,
   },
 
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 10,
   },
 
   option: {
     width: '48%',
-    padding: 20,
+    padding: 15,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#ddd',
-    borderRadius: 10,
     alignItems: 'center',
   },
 
   selected: {
-    backgroundColor: '#d4e6e8',
-    elevation: 10,
+    backgroundColor: '#dfe8ec',
+  },
+
+  footer: {
+    paddingVertical: 10,
   },
 
   saveBtn: {
-    backgroundColor: '#00a79d',
-    padding: 16,
+    backgroundColor: '#0bb',
+    padding: 15,
     borderRadius: 10,
-    marginTop: 30,
   },
 
   saveText: {
-    color: '#fff',
     textAlign: 'center',
+    color: '#fff',
     fontWeight: 'bold',
   },
 });
